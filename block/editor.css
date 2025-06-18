@@ -1,0 +1,153 @@
+/* APlayer古腾堡区块编辑器样式 */
+
+.aplayer-gutenberg-block-preview {
+    position: relative;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background: #f9f9f9;
+    transition: all 0.3s ease;
+}
+
+.aplayer-gutenberg-block-preview:hover {
+    border-color: #0073aa;
+    background: #f0f8ff;
+}
+
+.aplayer-gutenberg-block-preview .preview-icon {
+    font-size: 48px;
+    color: #666;
+    margin-bottom: 16px;
+}
+
+.aplayer-gutenberg-block-preview .preview-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.aplayer-gutenberg-block-preview .preview-description {
+    color: #666;
+    margin-bottom: 16px;
+}
+
+.aplayer-gutenberg-block-preview .track-list {
+    text-align: left;
+    max-height: 150px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 12px 0;
+}
+
+.aplayer-gutenberg-block-preview .track-list li {
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.aplayer-gutenberg-block-preview .track-list li:last-child {
+    border-bottom: none;
+}
+
+/* 侧边栏面板样式 */
+.aplayer-track-item {
+    border: 1px solid #ddd;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.aplayer-track-item .track-header {
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.aplayer-track-item .track-cover {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.aplayer-track-item .track-cover img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+
+.aplayer-track-item .track-actions {
+    margin-top: 12px;
+    text-align: right;
+}
+
+/* 颜色选择器样式 */
+.aplayer-color-picker {
+    margin-bottom: 16px;
+}
+
+.aplayer-color-picker label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .aplayer-track-item {
+        padding: 8px;
+    }
+    
+    .aplayer-track-item .track-cover img {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* 加载状态 */
+.aplayer-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* 提示信息 */
+.aplayer-notice {
+    background: #e7f3ff;
+    border: 1px solid #72aee6;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 12px 0;
+    color: #0073aa;
+}
+
+.aplayer-notice.error {
+    background: #ffebee;
+    border-color: #f44336;
+    color: #d32f2f;
+}
+
+/* 歌词输入框 */
+.aplayer-lrc-input {
+    width: 100%;
+    min-height: 100px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    resize: vertical;
+}
+
+.aplayer-lrc-input:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
+} 
