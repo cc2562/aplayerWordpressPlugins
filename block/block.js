@@ -30,17 +30,38 @@
             __('音乐', 'aplayer-gutenberg-block'),
             __('播放器', 'aplayer-gutenberg-block'),
             __('audio', 'aplayer-gutenberg-block'),
-            __('aplayer', 'aplayer-gutenberg-block')
+            __('aplayer', 'aplayer-gutenberg-block'),
+            __('网易云', 'aplayer-gutenberg-block')
         ],
-        description: __('一个功能强大的HTML5音乐播放器', 'aplayer-gutenberg-block'),
+        description: __('一个功能强大的HTML5音乐播放器，支持本地文件和网易云音乐', 'aplayer-gutenberg-block'),
         supports: {
             align: ['wide', 'full']
         },
         attributes: {
+            // 音乐来源类型
+            sourceType: {
+                type: 'string',
+                default: 'local' // local, netease
+            },
+            // 本地音频文件
             audioTracks: {
                 type: 'array',
                 default: []
             },
+            // 网易云音乐设置
+            neteaseType: {
+                type: 'string',
+                default: 'song' // song, playlist
+            },
+            neteaseId: {
+                type: 'string',
+                default: ''
+            },
+            neteaseAutoUrl: {
+                type: 'string',
+                default: ''
+            },
+            // 播放器设置
             theme: {
                 type: 'string',
                 default: '#b7daff'
@@ -82,7 +103,11 @@
         edit: function(props) {
             const { attributes, setAttributes, clientId } = props;
             const { 
-                audioTracks, 
+                sourceType,
+                audioTracks,
+                neteaseType,
+                neteaseId,
+                neteaseAutoUrl,
                 theme, 
                 loop, 
                 order, 
@@ -142,13 +167,103 @@
                 updateTrack(index, 'cover', media.url);
             };
 
+            // 从网易云音乐链接提取ID
+            const extractNeteaseId = (url) => {
+                if (!url) return;
+                
+                // 匹配歌曲ID
+                let match = url.match(/song\?id=(\d+)/);
+                if (match) {
+                    setAttributes({
+                        neteaseType: 'song',
+                        neteaseId: match[1],
+                        neteaseAutoUrl: ''
+                    });
+                    return;
+                }
+                
+                // 匹配歌单ID
+                match = url.match(/playlist\?id=(\d+)/);
+                if (match) {
+                    setAttributes({
+                        neteaseType: 'playlist',
+                        neteaseId: match[1],
+                        neteaseAutoUrl: ''
+                    });
+                    return;
+                }
+                
+                // 如果无法解析，使用自动模式
+                setAttributes({
+                    neteaseAutoUrl: url,
+                    neteaseId: ''
+                });
+            };
+
             return (
                 wp.element.createElement(Fragment, null,
                     // 侧边栏控制面板
                     wp.element.createElement(InspectorControls, null,
                         wp.element.createElement(PanelBody, {
-                            title: __('播放器设置', 'aplayer-gutenberg-block'),
+                            title: __('音乐来源', 'aplayer-gutenberg-block'),
                             initialOpen: true
+                        },
+                            wp.element.createElement(SelectControl, {
+                                label: __('选择音乐来源', 'aplayer-gutenberg-block'),
+                                value: sourceType,
+                                options: [
+                                    { label: __('本地文件', 'aplayer-gutenberg-block'), value: 'local' },
+                                    { label: __('网易云音乐', 'aplayer-gutenberg-block'), value: 'netease' }
+                                ],
+                                onChange: (value) => setAttributes({ sourceType: value })
+                            }),
+
+                            // 网易云音乐设置
+                            sourceType === 'netease' && wp.element.createElement(Fragment, null,
+                                wp.element.createElement('div', { style: { marginTop: '16px' } },
+                                    wp.element.createElement('p', { style: { fontSize: '13px', color: '#666' } },
+                                        __('支持网易云音乐歌曲和歌单链接，或手动输入ID', 'aplayer-gutenberg-block')
+                                    )
+                                ),
+                                
+                                wp.element.createElement(TextControl, {
+                                    label: __('网易云音乐链接', 'aplayer-gutenberg-block'),
+                                    value: neteaseAutoUrl,
+                                    onChange: (value) => {
+                                        setAttributes({ neteaseAutoUrl: value });
+                                        extractNeteaseId(value);
+                                    },
+                                    placeholder: __('粘贴网易云音乐链接...', 'aplayer-gutenberg-block'),
+                                    help: __('例如：https://music.163.com/song?id=123456', 'aplayer-gutenberg-block')
+                                }),
+
+                                wp.element.createElement('div', { style: { margin: '16px 0', textAlign: 'center', color: '#666' } },
+                                    __('— 或者 —', 'aplayer-gutenberg-block')
+                                ),
+
+                                wp.element.createElement(SelectControl, {
+                                    label: __('类型', 'aplayer-gutenberg-block'),
+                                    value: neteaseType,
+                                    options: [
+                                        { label: __('单曲', 'aplayer-gutenberg-block'), value: 'song' },
+                                        { label: __('歌单', 'aplayer-gutenberg-block'), value: 'playlist' }
+                                    ],
+                                    onChange: (value) => setAttributes({ neteaseType: value })
+                                }),
+
+                                wp.element.createElement(TextControl, {
+                                    label: __('ID', 'aplayer-gutenberg-block'),
+                                    value: neteaseId,
+                                    onChange: (value) => setAttributes({ neteaseId: value }),
+                                    placeholder: __('输入歌曲或歌单ID...', 'aplayer-gutenberg-block'),
+                                    help: __('从网易云音乐链接中提取的数字ID', 'aplayer-gutenberg-block')
+                                })
+                            )
+                        ),
+
+                        wp.element.createElement(PanelBody, {
+                            title: __('播放器设置', 'aplayer-gutenberg-block'),
+                            initialOpen: false
                         },
                             wp.element.createElement('div', { style: { marginBottom: '16px' } },
                                 wp.element.createElement('label', null, __('主题颜色', 'aplayer-gutenberg-block')),
@@ -194,15 +309,19 @@
                                 checked: listFolded,
                                 onChange: (value) => setAttributes({ listFolded: value })
                             }),
-                            wp.element.createElement(ToggleControl, {
-                                label: __('显示歌词', 'aplayer-gutenberg-block'),
-                                checked: showLrc,
-                                onChange: (value) => setAttributes({ showLrc: value })
-                            })
+                                                            wp.element.createElement(ToggleControl, {
+                                    label: __('显示歌词', 'aplayer-gutenberg-block'),
+                                    checked: showLrc,
+                                    onChange: (value) => setAttributes({ showLrc: value }),
+                                    help: sourceType === 'netease' ? 
+                                        __('网易云音乐会自动获取歌词（如果可用）', 'aplayer-gutenberg-block') :
+                                        __('本地文件需要手动添加LRC格式歌词', 'aplayer-gutenberg-block')
+                                })
                         ),
 
-                        wp.element.createElement(PanelBody, {
-                            title: __('音乐管理', 'aplayer-gutenberg-block'),
+                        // 本地音乐管理面板
+                        sourceType === 'local' && wp.element.createElement(PanelBody, {
+                            title: __('本地音乐管理', 'aplayer-gutenberg-block'),
                             initialOpen: true
                         },
                             wp.element.createElement(MediaUploadCheck, null,
@@ -323,28 +442,52 @@
                                 marginBottom: '10px',
                                 color: '#666'
                             }
-                        }, '🎵 APlayer 音乐播放器'),
+                        }, sourceType === 'netease' ? '🎵 网易云音乐播放器' : '🎵 APlayer 音乐播放器'),
                         
-                        audioTracks.length === 0 ? 
-                            wp.element.createElement('p', null, __('请添加音乐文件开始使用', 'aplayer-gutenberg-block')) :
+                        sourceType === 'netease' ? 
+                            // 网易云音乐预览
                             wp.element.createElement('div', null,
-                                wp.element.createElement('p', null, 
-                                    sprintf(
-                                        __('已添加 %d 首音乐', 'aplayer-gutenberg-block'), 
-                                        audioTracks.length
-                                    )
-                                ),
-                                wp.element.createElement('ul', {
-                                    style: { textAlign: 'left', maxHeight: '150px', overflow: 'auto' }
-                                },
-                                    audioTracks.map((track, index) => (
-                                        wp.element.createElement('li', { key: index },
-                                            `${track.name} - ${track.artist}`
+                                (!neteaseId && !neteaseAutoUrl) ? 
+                                    wp.element.createElement('p', null, __('请设置网易云音乐ID或链接', 'aplayer-gutenberg-block')) :
+                                    wp.element.createElement('div', null,
+                                        wp.element.createElement('p', null, 
+                                            neteaseAutoUrl ? 
+                                                __('自动解析链接模式', 'aplayer-gutenberg-block') :
+                                                sprintf(
+                                                    __('网易云%s - ID: %s', 'aplayer-gutenberg-block'), 
+                                                    neteaseType === 'song' ? __('单曲', 'aplayer-gutenberg-block') : __('歌单', 'aplayer-gutenberg-block'),
+                                                    neteaseId
+                                                )
+                                        ),
+                                        wp.element.createElement('small', { style: { color: '#666' } },
+                                            showLrc ? 
+                                                __('🎵 网易云音乐将在前端加载显示（含歌词）', 'aplayer-gutenberg-block') :
+                                                __('🎵 网易云音乐将在前端加载显示', 'aplayer-gutenberg-block')
                                         )
-                                    ))
-                                ),
-                                wp.element.createElement('small', { style: { color: '#666' } },
-                                    __('🎵 播放器将在前端显示', 'aplayer-gutenberg-block')
+                                    )
+                            ) :
+                            // 本地文件预览
+                            (audioTracks.length === 0 ? 
+                                wp.element.createElement('p', null, __('请添加音乐文件开始使用', 'aplayer-gutenberg-block')) :
+                                wp.element.createElement('div', null,
+                                    wp.element.createElement('p', null, 
+                                        sprintf(
+                                            __('已添加 %d 首音乐', 'aplayer-gutenberg-block'), 
+                                            audioTracks.length
+                                        )
+                                    ),
+                                    wp.element.createElement('ul', {
+                                        style: { textAlign: 'left', maxHeight: '150px', overflow: 'auto' }
+                                    },
+                                        audioTracks.map((track, index) => (
+                                            wp.element.createElement('li', { key: index },
+                                                `${track.name} - ${track.artist}`
+                                            )
+                                        ))
+                                    ),
+                                    wp.element.createElement('small', { style: { color: '#666' } },
+                                        __('🎵 播放器将在前端显示', 'aplayer-gutenberg-block')
+                                    )
                                 )
                             )
                     )

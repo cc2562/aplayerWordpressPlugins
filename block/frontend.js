@@ -1,6 +1,6 @@
 /**
  * APlayer古腾堡区块前端脚本
- * 用于在前端初始化和管理APlayer实例
+ * 用于在前端初始化和管理APlayer实例以及Meting.js网易云音乐
  */
 
 (function() {
@@ -10,7 +10,7 @@
     window.aplayerInstances = window.aplayerInstances || {};
 
     /**
-     * 初始化单个APlayer实例
+     * 初始化单个APlayer实例（本地文件模式）
      * @param {string} containerId - 容器ID
      * @param {Object} config - APlayer配置
      */
@@ -101,12 +101,29 @@
     }
 
     /**
+     * 重新触发Meting.js的初始化
+     */
+    function triggerMetingInit() {
+        if (typeof loadMeting === 'function') {
+            try {
+                loadMeting();
+                console.log('Meting.js reinitialized');
+            } catch (error) {
+                console.error('Error reinitializing Meting.js:', error);
+            }
+        } else {
+            console.warn('Meting.js loadMeting function not found');
+        }
+    }
+
+    /**
      * 初始化页面上的所有APlayer区块
      */
     function initAllAPlayers() {
-        const containers = document.querySelectorAll('.aplayer-gutenberg-block[data-aplayer-config]');
+        // 初始化本地文件播放器
+        const localContainers = document.querySelectorAll('.aplayer-gutenberg-block[data-aplayer-config]');
         
-        containers.forEach(container => {
+        localContainers.forEach(container => {
             try {
                 const config = JSON.parse(container.dataset.aplayerConfig);
                 const containerId = container.id;
@@ -118,6 +135,9 @@
                 console.error('Error parsing APlayer config:', error);
             }
         });
+
+        // 触发Meting.js重新初始化以处理网易云音乐播放器
+        triggerMetingInit();
     }
 
     /**
@@ -188,6 +208,7 @@
     window.initAPlayerBlock = initAPlayer;
     window.initAllAPlayerBlocks = initAllAPlayers;
     window.destroyAllAPlayerBlocks = destroyAllAPlayers;
+    window.triggerMetingInit = triggerMetingInit;
 
     /**
      * PJAX支持 - 页面切换时的回调处理
@@ -198,156 +219,39 @@
          * 建议在PJAX的success回调中调用
          */
         onPageEnter: function() {
-            // 稍微延迟初始化，确保DOM已完全渲染
-            setTimeout(function() {
-                initAllAPlayers();
-                console.log('APlayer PJAX: Players initialized on page enter');
-            }, 100);
+            console.log('PJAX: Page entered, initializing APlayer blocks');
+            setTimeout(initAllAPlayers, 100);
         },
 
         /**
          * 页面离开时的回调 - 清理播放器
-         * 建议在PJAX的beforeSend回调中调用
+         * 建议在PJAX的beforeSend或者complete回调中调用
          */
         onPageLeave: function() {
+            console.log('PJAX: Page leaving, destroying APlayer blocks');
             destroyAllAPlayers();
-            console.log('APlayer PJAX: Players destroyed on page leave');
-        },
-
-        /**
-         * 手动初始化指定容器中的播放器
-         * @param {string|Element} container - 容器选择器或DOM元素
-         */
-        initInContainer: function(container) {
-            let targetContainer;
-            if (typeof container === 'string') {
-                targetContainer = document.querySelector(container);
-            } else {
-                targetContainer = container;
-            }
-
-            if (targetContainer) {
-                const players = targetContainer.querySelectorAll('.aplayer-gutenberg-block[data-aplayer-config]');
-                players.forEach(playerElement => {
-                    try {
-                        const config = JSON.parse(playerElement.dataset.aplayerConfig);
-                        const containerId = playerElement.id;
-                        
-                        if (containerId && config) {
-                            initAPlayer(containerId, config);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing APlayer config:', error);
-                    }
-                });
-            }
-        },
-
-        /**
-         * 手动清理指定容器中的播放器
-         * @param {string|Element} container - 容器选择器或DOM元素
-         */
-        destroyInContainer: function(container) {
-            let targetContainer;
-            if (typeof container === 'string') {
-                targetContainer = document.querySelector(container);
-            } else {
-                targetContainer = container;
-            }
-
-            if (targetContainer) {
-                const players = targetContainer.querySelectorAll('.aplayer-gutenberg-block');
-                players.forEach(playerElement => {
-                    const containerId = playerElement.id;
-                    if (containerId && window.aplayerInstances[containerId]) {
-                        try {
-                            window.aplayerInstances[containerId].destroy();
-                            delete window.aplayerInstances[containerId];
-                        } catch (error) {
-                            console.warn('Error destroying APlayer instance:', containerId, error);
-                        }
-                    }
-                });
-            }
         }
     };
 
-    // 自动检测常见的PJAX框架并添加事件监听
-    
-    // 检测jQuery PJAX
-    if (typeof jQuery !== 'undefined' && jQuery.fn.pjax) {
-        jQuery(document).on('pjax:beforeSend', function() {
-            window.APlayerPJAX.onPageLeave();
-        });
+    /**
+     * 网易云音乐播放器支持
+     * 监听Meting.js的状态变化
+     */
+    function monitorMetingPlayers() {
+        // 定期检查网易云音乐播放器的状态
+        const metingContainers = document.querySelectorAll('.aplayer-netease');
         
-        jQuery(document).on('pjax:success', function() {
-            window.APlayerPJAX.onPageEnter();
+        metingContainers.forEach(container => {
+            if (!container.classList.contains('meting-processed')) {
+                container.classList.add('meting-processed');
+                console.log('Meting container found:', container.id);
+            }
         });
-        
-        console.log('APlayer PJAX: jQuery PJAX events registered');
     }
 
-    // 检测Barba.js (v2)
-    if (typeof barba !== 'undefined') {
-        if (barba.hooks) {
-            barba.hooks.before(function() {
-                window.APlayerPJAX.onPageLeave();
-            });
-            
-            barba.hooks.after(function() {
-                window.APlayerPJAX.onPageEnter();
-            });
-            
-            console.log('APlayer PJAX: Barba.js v2 hooks registered');
-        }
-    }
+    // 定期监控Meting播放器
+    setInterval(monitorMetingPlayers, 1000);
 
-    // 检测Turbo/Turbolinks
-    if (typeof Turbo !== 'undefined') {
-        document.addEventListener('turbo:before-visit', function() {
-            window.APlayerPJAX.onPageLeave();
-        });
-        
-        document.addEventListener('turbo:load', function() {
-            window.APlayerPJAX.onPageEnter();
-        });
-        
-        console.log('APlayer PJAX: Turbo events registered');
-    } else if (typeof Turbolinks !== 'undefined') {
-        document.addEventListener('turbolinks:before-visit', function() {
-            window.APlayerPJAX.onPageLeave();
-        });
-        
-        document.addEventListener('turbolinks:load', function() {
-            window.APlayerPJAX.onPageEnter();
-        });
-        
-        console.log('APlayer PJAX: Turbolinks events registered');
-    }
-
-    // 检测InstantClick
-    if (typeof InstantClick !== 'undefined') {
-        InstantClick.on('change', function() {
-            window.APlayerPJAX.onPageLeave();
-            // InstantClick在change事件中页面已经切换完成
-            setTimeout(function() {
-                window.APlayerPJAX.onPageEnter();
-            }, 50);
-        });
-        
-        console.log('APlayer PJAX: InstantClick events registered');
-    }
-
-    // 兼容旧版浏览器的polyfill
-    if (!Element.prototype.closest) {
-        Element.prototype.closest = function(s) {
-            var el = this;
-            do {
-                if (Element.prototype.matches.call(el, s)) return el;
-                el = el.parentElement || el.parentNode;
-            } while (el !== null && el.nodeType === 1);
-            return null;
-        };
-    }
+    console.log('APlayer Gutenberg Block frontend script loaded');
 
 })(); 
