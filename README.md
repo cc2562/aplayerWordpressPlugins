@@ -1,8 +1,5 @@
 # 🎵 APlayer 古腾堡区块
 
-<p align="center">
-  <img src="https://ws4.sinaimg.cn/large/006tKfTcgy1fhu01y9uy7j305k04s3yc.jpg" alt="APlayer" width="100">
-</p>
 
 <p align="center">
   <strong>一个优雅的WordPress古腾堡音乐播放器区块插件</strong>
