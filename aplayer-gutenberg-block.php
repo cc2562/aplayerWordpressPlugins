@@ -3,7 +3,7 @@
  * Plugin Name: APlayer古腾堡区块
  * Plugin URI: https://github.com/DIYgod/APlayer
  * Description: 一个基于APlayer的古腾堡音乐播放器区块，支持播放WordPress媒体库中的音乐文件和网易云音乐
- * Version: 1.1.5
+ * Version: 1.1.6
  * Author: CC米饭WithAI
  * License: MIT
  * Text Domain: aplayer-gutenberg-block
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // 定义插件常量
-define('APLAYER_GUTENBERG_BLOCK_VERSION', '1.1.5');
+define('APLAYER_GUTENBERG_BLOCK_VERSION', '1.1.6');
 define('APLAYER_GUTENBERG_BLOCK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('APLAYER_GUTENBERG_BLOCK_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
